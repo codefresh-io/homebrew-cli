@@ -1,9 +1,9 @@
 class Codefresh < Formula
     desc "Codefresh CLI provides a full and flexible interface to interact with Codefresh."
     homepage "http://cli.codefresh.io"
-    url "https://github.com/codefresh-io/cli/releases/download/v0.71.2/codefresh-v0.71.2-macos-x64.tar.gz"
-    version "v0.71.2"
-    sha256 "937db0526aee2cfb2e8deb538464e5ae8c636ab718f47bd8c3de7ce6f6aeb28d"
+    url "https://github.com/codefresh-io/cli/releases/download/v0.71.3/codefresh-v0.71.3-macos-x64.tar.gz"
+    version "v0.71.3"
+    sha256 "ae75b249193844ddb51d4ce5d5a673060a05413f3be1aaca6bf92829a51f1db3"
   
     def install
       bin.install "codefresh"
