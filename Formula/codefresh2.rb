@@ -6,7 +6,7 @@ class Codefresh2 < Formula
     sha256 "06888debd085c9b1770d183f3925cdd7109e44c4120a73b715f131b6efdba76c"
   
     def install
-      bin.install "cf"
+      bin.install "cf-darwin-amd64" => "cf"
     end
   
     test do
