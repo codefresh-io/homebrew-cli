@@ -2,8 +2,8 @@ class Cf2 < Formula
   desc "Codefresh CLI tool, V2"
   homepage "https://codefresh.io/"
   url "https://github.com/codefresh-io/cli-v2.git",
-    tag:      "v0.0.237",
-    revision: "e7bdd7bfa172382869a4150d6f6acb70fd372d72"
+    tag:      "v0.0.239",
+    revision: "27c6ff8fd133c7a62e969f90b9b39d3b6aa75142"
   license "Apache-2.0"
 
   depends_on "go" => :build
