@@ -3,7 +3,7 @@ class Codefresh < Formula
     homepage "http://cli.codefresh.io"
     url "https://github.com/codefresh-io/cli/releases/download/v0.85.0/codefresh-v0.85.0-macos-x64.tar.gz"
     version "v0.85.0"
-    sha256 "38af9a9e35441b928eb2b58724039944d05190f7cd61a12ea6fa62468c671494"
+    sha256 "5a8ac446116d9a2ef12952405a92e7367af21c9c214cabe2c2c39f6e8e63b2e6"
   
     def install
       bin.install "codefresh"
