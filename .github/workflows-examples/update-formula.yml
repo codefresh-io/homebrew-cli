@@ -1,0 +1,89 @@
+name: Update Formula with GPG Signature
+
+on:
+  workflow_dispatch:
+    inputs:
+      formula:
+        description: 'Formula to update (cf2 or codefresh)'
+        required: true
+        type: choice
+        options:
+          - cf2
+          - codefresh
+      version:
+        description: 'New version'
+        required: true
+        type: string
+      url:
+        description: 'Download URL'
+        required: true
+        type: string
+      sha256:
+        description: 'SHA256 checksum'
+        required: true
+        type: string
+
+jobs:
+  update-formula:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      
+      - name: Import GPG key
+        uses: crazy-max/ghaction-import-gpg@v6
+        with:
+          gpg_private_key: ${{ secrets.BOT_GPG_PRIVATE_KEY }}
+          passphrase: ${{ secrets.BOT_GPG_PASSPHRASE }}
+          git_user_signingkey: true
+          git_commit_gpgsign: true
+      
+      - name: Update formula
+        run: |
+          FORMULA_FILE="Formula/${{ github.event.inputs.formula }}.rb"
+          
+          if [ ! -f "$FORMULA_FILE" ]; then
+            echo "Error: Formula file $FORMULA_FILE not found"
+            exit 1
+          fi
+          
+          # Update version
+          sed -i "s|version \".*\"|version \"${{ github.event.inputs.version }}\"|g" "$FORMULA_FILE"
+          
+          # Update URL
+          sed -i "s|url \".*\"|url \"${{ github.event.inputs.url }}\"|g" "$FORMULA_FILE"
+          
+          # Update SHA256
+          sed -i "s|sha256 \".*\"|sha256 \"${{ github.event.inputs.sha256 }}\"|g" "$FORMULA_FILE"
+          
+          echo "✓ Updated $FORMULA_FILE"
+          cat "$FORMULA_FILE"
+      
+      - name: Commit changes with GPG signature
+        run: |
+          git config user.name "codefresh-bot"
+          git config user.email "bot@codefresh.io"
+          
+          git add Formula/${{ github.event.inputs.formula }}.rb
+          git commit -S -m "update formula ${{ github.event.inputs.formula }} to version ${{ github.event.inputs.version }}"
+          
+          echo "✓ Changes committed with GPG signature"
+          git log --show-signature -1
+      
+      - name: Push changes
+        run: |
+          git push origin master
+          echo "✓ Changes pushed to master"
+      
+      - name: Verify commit signature
+        run: |
+          if git verify-commit HEAD; then
+            echo "✓ Commit signature verified successfully"
+          else
+            echo "⚠ Warning: Commit signature verification failed"
+            exit 1
+          fi
