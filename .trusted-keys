@@ -1,0 +1,26 @@
+# Trusted GPG Keys for codefresh-io/cli Homebrew Tap
+#
+# This file contains the fingerprints of GPG keys authorized to sign
+# commits and releases for this tap.
+#
+# Format: FINGERPRINT  Name <email>
+#
+# To add a new key:
+# 1. Generate or identify the GPG key to be used
+# 2. Get the fingerprint: gpg --fingerprint KEY_ID
+# 3. Add a line below with the full fingerprint and identity
+# 4. Optionally export the public key to this repository
+#
+# For bot accounts that update formulas:
+# - codefresh-git-integration[bot] <151943927+codefresh-git-integration[bot]@users.noreply.github.com>
+# - cf-ci-bot-v2 <107364971+cf-ci-bot-v2@users.noreply.github.com>
+#
+# Maintainers: Add your GPG key fingerprints below
+# Example:
+# ABCD1234EFGH5678IJKL9012MNOP3456QRST7890  John Doe <john.doe@codefresh.io>
+
+# Bot accounts - keys to be added once GPG signing is configured
+# [Pending] codefresh-git-integration[bot]
+# [Pending] cf-ci-bot-v2
+
+# Human maintainers - add your keys here
