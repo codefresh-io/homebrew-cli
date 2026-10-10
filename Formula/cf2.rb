@@ -3,7 +3,7 @@ class Cf2 < Formula
   homepage "https://codefresh.io/"
   url "https://github.com/codefresh-io/cli-v2.git",
     tag:      "v1.0.10",
-    revision: "bb29dbd81df083e1a18d1ea6598d163f424c0ef7"
+    revision: "cbca70d711d499f81518239647ab1e1fc5069dce"
   license "Apache-2.0"
 
   depends_on "go" => :build
