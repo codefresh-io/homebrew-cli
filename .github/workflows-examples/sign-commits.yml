@@ -1,0 +1,67 @@
+name: Sign Commits with GPG
+
+on:
+  workflow_dispatch:
+    inputs:
+      commit_sha:
+        description: 'Commit SHA to sign (leave empty for HEAD)'
+        required: false
+        type: string
+
+jobs:
+  sign-commit:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          ref: ${{ github.event.inputs.commit_sha || github.ref }}
+      
+      - name: Import GPG key
+        id: import-gpg
+        uses: crazy-max/ghaction-import-gpg@v6
+        with:
+          gpg_private_key: ${{ secrets.BOT_GPG_PRIVATE_KEY }}
+          passphrase: ${{ secrets.BOT_GPG_PASSPHRASE }}
+          git_user_signingkey: true
+          git_commit_gpgsign: true
+          git_tag_gpgsign: true
+          git_push_gpgsign: false
+      
+      - name: Display GPG key info
+        run: |
+          echo "GPG key imported successfully"
+          echo "Key ID: ${{ steps.import-gpg.outputs.keyid }}"
+          echo "Fingerprint: ${{ steps.import-gpg.outputs.fingerprint }}"
+          gpg --list-keys
+      
+      - name: Verify or create signed commit
+        run: |
+          # Check if the current commit is already signed
+          if git verify-commit HEAD 2>/dev/null; then
+            echo "✓ HEAD commit is already signed"
+            git log --show-signature -1
+          else
+            echo "⚠ HEAD commit is not signed"
+            echo "To sign existing commits, use: git rebase --exec 'git commit --amend --no-edit -n -S' -i <base-commit>"
+            echo "Note: This requires force-pushing and may disrupt users who have already cloned the repository"
+          fi
+      
+      - name: Sign latest commit (amend)
+        if: github.event_name == 'workflow_dispatch'
+        run: |
+          # This will amend the latest commit with a GPG signature
+          git commit --amend --no-edit -S
+          echo "✓ Commit signed successfully"
+          git log --show-signature -1
+      
+      - name: Push signed commit
+        if: github.event_name == 'workflow_dispatch'
+        run: |
+          # Force push the signed commit
+          git push --force-with-lease origin ${{ github.ref_name }}
+          echo "✓ Signed commit pushed to ${{ github.ref_name }}"

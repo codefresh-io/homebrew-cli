@@ -1,0 +1,127 @@
+name: Verify GPG Signatures
+
+on:
+  pull_request:
+    branches: [master, main]
+  push:
+    branches: [master, main]
+
+jobs:
+  verify-signatures:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      
+      - name: Import trusted keys
+        run: |
+          if [ -f ".trusted-keys.gpg" ]; then
+            echo "Importing trusted keys..."
+            gpg --import .trusted-keys.gpg || true
+          else
+            echo "No .trusted-keys.gpg file found"
+          fi
+      
+      - name: Verify commit signatures
+        id: verify
+        run: |
+          echo "Checking GPG signatures on commits..."
+          
+          if [ "${{ github.event_name }}" = "pull_request" ]; then
+            # For PRs, check all commits in the PR
+            BASE_SHA="${{ github.event.pull_request.base.sha }}"
+            HEAD_SHA="${{ github.event.pull_request.head.sha }}"
+            COMMITS=$(git rev-list $BASE_SHA..$HEAD_SHA)
+          else
+            # For pushes, check the pushed commits
+            COMMITS=$(git rev-list ${{ github.event.before }}..${{ github.event.after }})
+          fi
+          
+          unsigned_commits=""
+          invalid_commits=""
+          signed_count=0
+          
+          for commit in $COMMITS; do
+            commit_short=$(git log --format="%h" -1 $commit)
+            commit_msg=$(git log --format="%s" -1 $commit)
+            
+            if git verify-commit $commit 2>/dev/null; then
+              echo "✓ [$commit_short] $commit_msg - SIGNED"
+              ((signed_count++))
+            else
+              sig_status=$(git log --format="%G?" -1 $commit)
+              if [ "$sig_status" = "N" ]; then
+                echo "✗ [$commit_short] $commit_msg - NO SIGNATURE"
+                unsigned_commits="$unsigned_commits\n- $commit_short: $commit_msg"
+              else
+                echo "⚠ [$commit_short] $commit_msg - INVALID/UNTRUSTED SIGNATURE"
+                invalid_commits="$invalid_commits\n- $commit_short: $commit_msg"
+              fi
+            fi
+          done
+          
+          echo ""
+          echo "Summary: $signed_count commits properly signed"
+          
+          if [ -n "$unsigned_commits" ] || [ -n "$invalid_commits" ]; then
+            echo ""
+            echo "::error::Not all commits are properly GPG-signed"
+            
+            if [ -n "$unsigned_commits" ]; then
+              echo ""
+              echo "Unsigned commits:"
+              echo -e "$unsigned_commits"
+            fi
+            
+            if [ -n "$invalid_commits" ]; then
+              echo ""
+              echo "Invalid/Untrusted signatures:"
+              echo -e "$invalid_commits"
+            fi
+            
+            echo ""
+            echo "This tap requires all commits to be GPG-signed for Homebrew trust verification."
+            echo "Please see SIGNING.md for instructions on setting up GPG signing."
+            
+            exit 1
+          else
+            echo "✓ All commits are properly GPG-signed"
+          fi
+      
+      - name: Post PR comment on failure
+        if: failure() && github.event_name == 'pull_request'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: `## ⚠️ GPG Signature Verification Failed
+              
+              This pull request contains commits that are not properly GPG-signed.
+              
+              **Why is this required?**
+              Homebrew requires tap trust verification for security. All commits to this tap must be GPG-signed to ensure authenticity and prevent unauthorized modifications.
+              
+              **How to fix:**
+              1. Set up GPG signing by following the instructions in [SIGNING.md](../blob/master/SIGNING.md)
+              2. Sign your commits:
+                 \`\`\`bash
+                 # For existing commits
+                 git rebase --exec 'git commit --amend --no-edit -n -S' -i origin/master
+                 
+                 # For new commits
+                 git commit -S -m "your message"
+                 \`\`\`
+              3. Force push your branch:
+                 \`\`\`bash
+                 git push --force-with-lease
+                 \`\`\`
+              
+              **Need help?**
+              See [SIGNING.md](../blob/master/SIGNING.md) for detailed setup instructions.
+              `
+            })
